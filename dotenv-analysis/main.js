@@ -9,7 +9,7 @@ const readingEnv = () => {
   Object.keys(envObj).forEach(key => {
     process.env[key] = envObj[key]
   })
-  console.log(process.env.ACTIVITY)
+  console.log(process.env)
 }
 const parasEnv = src => {
   const obj = {}
