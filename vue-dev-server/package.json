@@ -1,0 +1,23 @@
+{
+  "name": "vue-dev-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "vue-dev-server": "./bin/vue-dev-server.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vue/component-compiler": "^4.2.4",
+    "express": "^4.17.2",
+    "lru-cache": "^4.1.5",
+    "recast": "^0.20.5",
+    "validate-npm-package-name": "^3.0.0",
+    "vue-template-compiler": "^2.6.14"
+  }
+}
