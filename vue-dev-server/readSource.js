@@ -16,4 +16,4 @@ async function readSource(req) {
   }
 }
 
-module.exports = readFile
+module.exports = readSource

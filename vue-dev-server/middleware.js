@@ -5,6 +5,8 @@ const root = process.cwd()
 const path = require('path')
 const parseUrl = require('parseurl')
 const readSource = require('./readSource')
+const { transformModuleImports } = require('./transformModuleImports')
+const { loadPkg } = require('./loadPkg')
 
 const defaultOptions = {
   cache: true
@@ -43,14 +45,30 @@ const vueMiddleware = (options = defaultOptions) => {
     res.end(source)
   }
 
-  function cacheData(key, data, updateTime) {
-    const old = cache.peek(key)
+  function injectSourceMapToBlock(block, lang) {
+    const map = Base64.toBase64(JSON.stringify(block.map))
+    let mapInject
+    switch (lang) {
+      case 'js':
+        mapInject = `//# sourceMappingURL=data:application/json;base64,${map}\n`
+        break
+      case 'css':
+        mapInject = `/*# sourceMappingURL=data:application/json;base64,${map}*/\n`
+      default:
+        break
+    }
+    return {
+      ...block,
+      code: mapInject + block.code
+    }
+  }
 
-    if (old != data) {
-      cache.set(key, data)
-      if (updateTime) time[key] = updateTime
-      return true
-    } else return false
+  function injectSourceMapToScript(script) {
+    return injectSourceMapToBlock(script, 'js')
+  }
+
+  function injectSourceMapToStyle(styles) {
+    return styles.map(styles => injectSourceMapToBlock(styles, 'css'))
   }
 
   // 根据这个函数，根据@vue/component-compiler转换单文件组件，最终返回浏览器能够识别的文件
@@ -66,16 +84,22 @@ const vueMiddleware = (options = defaultOptions) => {
   }
 
   return async (req, res, next) => {
+    console.log(req.path)
     if (req.path.endsWith('.vue')) {
       const key = parseUrl(req).pathname
       console.log(key)
-      let out = await tryCache(key)
-      if (!out) {
-        const result = await bundleSFC(req)
-        out = result
-        cacheData(key, out, result.updateTime)
-      }
+      const result = await bundleSFC(req)
+      out = result
       send(res, out.code, 'application/javascript')
+    } else if (req.path.endsWith('.js')) {
+      const result = await readSource(req)
+      out = transformModuleImports(result.source)
+      send(res, out, 'application/javascript')
+    } else if (req.path.startsWith('/__modules/')) {
+      const key = parseUrl(req).pathname
+      const pkg = req.path.replace(/^\/__modules\//, '')
+      out = (await loadPkg(pkg)).toString()
+      send(res, out, 'application/javascript')
     }
   }
 }
